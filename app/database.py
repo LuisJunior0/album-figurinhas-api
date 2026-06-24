@@ -15,10 +15,10 @@ db_name = os.getenv("DB_NAME")
 
 
 # Criação a ULR para conexão com o banco de dados segura
-DataBase_SQLAlchemy_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 # Criação do motor de conexão usando a ULR feita acima
-engine = create_engine(DataBase_SQLAlchemy_URL)
+engine = create_engine(DATABASE_URL)
 
 # Sessões para conversa com o DataBase
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
