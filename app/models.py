@@ -2,8 +2,8 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base  
 
-class usuario(Base):
-    __tablename__ = "Usuarios"
+class Usuario(Base):
+    __tablename__ = "usuarios"
 
     id = Column(Integer, primary_key=True, index=True)
     
@@ -37,7 +37,7 @@ class Figurinha(Base):
     numero = Column(Integer, nullable=False)
 
     # Observação sobre as figurinhas coladas/repetidas
-    observação = Column(String, nullable=False)
+    observacao = Column(String(255), nullable=True) 
     
     # Quantidade de figurinhas coladas/repetidas (Assume valor padrão de 1)
     quantidade = Column(Integer, nullable=False, default=1)
@@ -46,13 +46,13 @@ class Figurinha(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     # ForeignKey para identificação do usuario
-    usuario_id = Column(Integer, ForeignKey("Usuarios.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
 
      
-    def __init__(self, sigla, numero, observação, usuario_id, quantidade=1, created_at=None):
+    def __init__(self, sigla, numero, observacao, usuario_id, quantidade=1, created_at=None):
         self.sigla = sigla
         self.numero = numero
-        self.observação = observação
+        self.observacao = observacao
         self.quantidade = quantidade
         self.created_at = created_at
         self.usuario_id = usuario_id
