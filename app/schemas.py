@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class UsuarioSchema(BaseModel):
@@ -15,10 +15,8 @@ class FigurinhaSchema(BaseModel):
     sigla: str
     numero: int
     observacao: Optional[str] = None
-    quantidade: int
+    quantidade: int = Field(default = 1, ge=1)
     usuario_id: int
-    
-    
-
+     
     class Config:
         from_attributes = True

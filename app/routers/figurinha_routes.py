@@ -20,7 +20,7 @@ async def criar_figurinha(figurinhaschema:FigurinhaSchema, session: Session = De
     """
     Esta é a rota padrão de criação de figurinha, toda criação de figurinhas precisa de uma autenticação prévia!
     """
-    figurinha = session.query(Figurinha).filter(Figurinha.sigla==figurinhaschema.sigla, Figurinha.numero==figurinhaschema.numero ).first()
+    figurinha = session.query(Figurinha).filter(Figurinha.sigla==figurinhaschema.sigla, Figurinha.numero==figurinhaschema.numero).first()
     if figurinha:
         #Ja existe uma figurinha com essa sigla e numero [!]
         figurinha.quantidade += figurinhaschema.quantidade
