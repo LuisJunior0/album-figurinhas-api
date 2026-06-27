@@ -1,19 +1,26 @@
 from fastapi import APIRouter, Depends
 from app.schemas import FigurinhaSchema
 from app.dependencies import pegar_sessao
-from sqlalchemy.orm import Session
-from app.models import Figurinha
-
-
+from sqlalchemy.orm import Session, session
+from app.models import Figurinha, Usuario
+from app.routers.auth_routes import verificar_token
 
 figurinhas_router = APIRouter(prefix="/figurinhas", tags=["Figurinha"])
 
-@figurinhas_router.get("/listar")
-async def figurinhas():
+@figurinhas_router.get("/listar", response_model=list[str])
+async def listar_figurinhas(usuario: Usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
     """
-    Esta é a rota padrão de figurinhas, toda listagem de figurinhas precisa de uma autenticação prévia!
+    Traz todas as figurinhas que pertencem ao ID do usuário que está logado
     """
-    return {"Mensagem": "Você acessou seu album de figurinhas"}
+    lista_formatada = []
+
+    minhas_figurinhas = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id).all()
+    
+    for figurinha in minhas_figurinhas:
+        texto = f"{figurinha.sigla} {figurinha.numero} -- {figurinha.quantidade}"
+        lista_formatada.append(texto)
+    
+    return lista_formatada
 
 @figurinhas_router.post("/criar_figurinha")
 async def criar_figurinha(figurinhaschema:FigurinhaSchema, session: Session = Depends(pegar_sessao)):
