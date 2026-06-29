@@ -23,8 +23,5 @@ class FigurinhaSchema(BaseModel):
     numero: int
     observacao: Optional[str] = None
     quantidade: int = Field(default = 1, ge=1)
-    usuario_id: int
-     
     class Config:
         from_attributes = True
-
