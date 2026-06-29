@@ -81,7 +81,18 @@ async def verificar_repetidas(usuario = Depends(verificar_token), session: Sessi
     return lista_repetidas
     
 
-
-
+@figurinhas_router.get("/progresso")
+async def mostrar_progresso(usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    """
+    Esta é a rota padrão para listagem de progresso do album, a rota de listagem do progresso precisa de uma autenticação prévia!
+    """
+    TOTAL_ALBUM = 980
+    quantidade_figurinhas  = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id).count()
+    final_percentual = (quantidade_figurinhas/TOTAL_ALBUM) * 100
+    return {
+    "figurinhas": quantidade_figurinhas,
+    "total_album": TOTAL_ALBUM,
+    "progresso percentual": round(final_percentual, 2)
+        }
 
     
