@@ -10,7 +10,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-def criar_token(usuario_id, duracao_token = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
+def criar_token(
+    usuario_id, 
+    duracao_token = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
+    
     data_expiracao = datetime.now(timezone.utc) + duracao_token
     dic_info = {"sub": str(usuario_id), "exp": data_expiracao}
     jwt_decodificado = jwt.encode(dic_info, SECRET_KEY, ALGORITHM)
@@ -32,7 +35,10 @@ async def home():
     return {"Mensagem": "Você acessou o login", "Autenticado": False}
 
 @auth_router.post("/criar_conta")
-async def criar_conta(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
+async def criar_conta(
+    usuario_schema: UsuarioSchema, 
+    session: Session = Depends(pegar_sessao)):
+
     usuario = session.query(Usuario).filter(Usuario.email==usuario_schema.email).first()
     if usuario:
         #Ja existe um usuario com esse email
@@ -46,7 +52,10 @@ async def criar_conta(usuario_schema: UsuarioSchema, session: Session = Depends(
 
 # Login -> email e senha > token JWT
 @auth_router.post("/login")
-async def login(loginschema: LoginSchema, session: Session = Depends(pegar_sessao)):
+async def login(
+    loginschema: LoginSchema, 
+    session: Session = Depends(pegar_sessao)):
+
     usuario = autenticar_usuario(loginschema.email, loginschema.senha, session)
     if not usuario:
         raise HTTPException(status_code=400, detail="Usuario Não Encontrado ou Credenciais Invalidas")
@@ -60,7 +69,10 @@ async def login(loginschema: LoginSchema, session: Session = Depends(pegar_sessa
             }
 
 @auth_router.post("/login_form")
-async def login_form(dados_formulario: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(pegar_sessao)):
+async def login_form(
+    dados_formulario: OAuth2PasswordRequestForm = Depends(), 
+    session: Session = Depends(pegar_sessao)):
+    
     usuario = autenticar_usuario(dados_formulario.username, dados_formulario.password, session)
     if not usuario:
         raise HTTPException(status_code=400, detail="Usuario Não Encontrado ou Credenciais Invalidas")

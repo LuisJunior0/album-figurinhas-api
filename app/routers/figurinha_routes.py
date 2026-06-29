@@ -1,28 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from app.schemas import FigurinhaSchema
 from app.dependencies import pegar_sessao
-from sqlalchemy.orm import Session, session
+from sqlalchemy.orm import Session
 from app.models import Figurinha, Usuario
 from app.routers.auth_routes import verificar_token
 
 figurinhas_router = APIRouter(prefix="/figurinhas", tags=["Figurinha"])
 
-@figurinhas_router.get("/listar", response_model=list[str])
-async def listar_figurinhas(usuario: Usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+@figurinhas_router.get("/listar")
+async def listar_figurinhas(
+    usuario: Usuario = Depends(verificar_token), 
+    session: Session = Depends(pegar_sessao)):
+
     """
     Traz todas as figurinhas que pertencem ao ID do usuário que está logado
     """
-    lista_formatada = []
-
+     
     minhas_figurinhas = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id).all()
-    for figurinha in minhas_figurinhas:
-        texto = f"{figurinha.sigla} {figurinha.numero} -- {figurinha.quantidade}"
-        lista_formatada.append(texto)
-    
-    return lista_formatada
+
+    # Utilizando List Comprehension para filtrar os dados em formato json
+    return [
+        {
+            "sigla": figurinha.sigla,
+            "numero": figurinha.numero,
+            "quantidade": figurinha.quantidade,
+            "observacao": figurinha.observacao
+        }
+        for figurinha in minhas_figurinhas
+    ]
 
 @figurinhas_router.post("/criar_figurinha")
-async def criar_figurinha(figurinhaschema:FigurinhaSchema,  usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+async def criar_figurinha(
+    figurinhaschema:FigurinhaSchema,  
+    usuario: Usuario = Depends(verificar_token), 
+    session: Session = Depends(pegar_sessao)):
+
     """
     Esta é a rota padrão de criação de figurinha, toda criação de figurinhas precisa de uma autenticação prévia!
     """
@@ -44,7 +56,11 @@ async def criar_figurinha(figurinhaschema:FigurinhaSchema,  usuario = Depends(ve
         return {"mensagem": f"Figurinha NOVA [+] cadastrada com SUCESSO:  {figurinhaschema.sigla, figurinhaschema.numero} [+{figurinhaschema.quantidade}]"}
 
 @figurinhas_router.post("/remover_figurinha")
-async def remover_figurinha(figurinhaschema:FigurinhaSchema, usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+async def remover_figurinha(
+    figurinhaschema:FigurinhaSchema,
+    usuario: Usuario = Depends(verificar_token), 
+    session: Session = Depends(pegar_sessao)):
+
     """
     Esta é a rota padrão de remoção de figurinha, toda remoção de figurinha precisa de uma autenticação prévia!
     """
@@ -67,22 +83,33 @@ async def remover_figurinha(figurinhaschema:FigurinhaSchema, usuario = Depends(v
             session.commit()
             return {"mensagem": f"Figurinha Deletada [-] do Album: {figurinhaschema.sigla, figurinhaschema.numero}"}
         
-@figurinhas_router.get("/repetidas", response_model=list[str])
-async def verificar_repetidas(usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+@figurinhas_router.get("/repetidas")
+async def verificar_repetidas(
+    usuario: Usuario = Depends(verificar_token),
+    session: Session = Depends(pegar_sessao)):
+
     """
     Esta é a rota padrão de listagem de figurinhas repetidas, toda listagem de repetidas precisa de uma autenticação prévia!
     """
     figurinhas_repetidas = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id, Figurinha.quantidade > 1).all()
-
-    lista_repetidas = []
-    for repetida in figurinhas_repetidas:
-        texto = f"{repetida.sigla} {repetida.numero} -- {(repetida.quantidade) -1}"
-        lista_repetidas.append(texto)
-    return lista_repetidas
     
+    # Utilizando List Comprehension para filtrar os dados em formato json
+    return [
+        
+        {
+            "sigla": figurinha.sigla,
+            "numero": figurinha.numero,
+            "quantidade": (figurinha.quantidade)-1,
+            "observacao": figurinha.observacao
+        }
+        for figurinha in figurinhas_repetidas
+    ]
 
 @figurinhas_router.get("/progresso")
-async def mostrar_progresso(usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+async def mostrar_progresso(
+    usuario: Usuario = Depends(verificar_token), 
+    session: Session = Depends(pegar_sessao)):
+
     """
     Esta é a rota padrão para listagem de progresso do album, a rota de listagem do progresso precisa de uma autenticação prévia!
     """
@@ -92,7 +119,27 @@ async def mostrar_progresso(usuario = Depends(verificar_token), session: Session
     return {
     "figurinhas": quantidade_figurinhas,
     "total_album": TOTAL_ALBUM,
-    "progresso percentual": round(final_percentual, 2)
+    "progresso_percentual": round(final_percentual, 2)
         }
 
+@figurinhas_router.get("/{sigla}/{numero}")
+async def destacar_figurinha(
+    sigla:str = Path(..., min_length=3, max_length=3, description="A sigla da seleção com 3 letras"), 
+    numero:int = Path(..., ge=1, description="O número da figurinha deve ser maior ou igual a 1"),
+    usuario: Usuario = Depends(verificar_token),
+    session: Session = Depends(pegar_sessao)):
+
+    """
+    Esta é a rota padrão para consulta detalhada de figurinha, a rota consulta detalhada precisa de uma autenticação prévia!
+    """
+    # Validando que a sigla sera maiuscula para consulta correta na tabela
+    sigla_upper = sigla.upper()
+    figurinha_destacada = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id, Figurinha.sigla==sigla_upper, Figurinha.numero==numero).first()
+    if not figurinha_destacada:
+        raise HTTPException(status_code=404, detail="Figurinha Não Encontrada")
     
+    return {
+    "sigla": figurinha_destacada.sigla,
+    "numero": figurinha_destacada.numero,
+    "observação": figurinha_destacada.observacao
+            }
