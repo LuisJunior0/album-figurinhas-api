@@ -15,9 +15,6 @@ async def listar_figurinhas(usuario: Usuario = Depends(verificar_token), session
     lista_formatada = []
 
     minhas_figurinhas = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id).all()
-    if not minhas_figurinhas:
-        raise HTTPException(status_code=404, detail="Figurinha Não Encontrada")
-    
     for figurinha in minhas_figurinhas:
         texto = f"{figurinha.sigla} {figurinha.numero} -- {figurinha.quantidade}"
         lista_formatada.append(texto)
@@ -41,27 +38,49 @@ async def criar_figurinha(figurinhaschema:FigurinhaSchema,  usuario = Depends(ve
         #figurinha nova encontrada [+]
         # Devem ser passados os parametros na mesma ordem do __init__ em app.models para classe Figurinha
         # Ou definir antes o nome da variavel igual ao construtor __init__
-        figurinha_nova = Figurinha(sigla=figurinhaschema.sigla, numero=figurinhaschema.numero, observacao=figurinhaschema.observacao, usuario_id=usuario.id, quantidade= figurinhaschema.quantidade)
+        figurinha_nova = Figurinha(sigla=figurinhaschema.sigla, numero=figurinhaschema.numero, quantidade= figurinhaschema.quantidade, usuario_id=usuario.id, observacao=figurinhaschema.observacao)
         session.add(figurinha_nova)
         session.commit()
         return {"mensagem": f"Figurinha NOVA [+] cadastrada com SUCESSO:  {figurinhaschema.sigla, figurinhaschema.numero} [+{figurinhaschema.quantidade}]"}
 
 @figurinhas_router.post("/remover_figurinha")
 async def remover_figurinha(figurinhaschema:FigurinhaSchema, usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    """
+    Esta é a rota padrão de remoção de figurinha, toda remoção de figurinha precisa de uma autenticação prévia!
+    """
     figurinha_removida = session.query(Figurinha).filter(Figurinha.sigla==figurinhaschema.sigla, Figurinha.numero==figurinhaschema.numero, Figurinha.usuario_id==usuario.id).first()
     if not figurinha_removida:
-        raise HTTPException(status_code=404, detail="Figurinha Não Encontrada")
+        raise HTTPException(status_code=404, detail="Figurinha Não Encontrada") 
     elif figurinha_removida.quantidade > figurinhaschema.quantidade:
         # Não deletar uma linha, apenas diminuir a quantidade
         figurinha_removida.quantidade -= figurinhaschema.quantidade
         session.commit()
         return {"mensagem": f"Figurinha(s) removida [!] com SUCESSO: {figurinhaschema.sigla, figurinhaschema.numero} [-{figurinhaschema.quantidade}]"}
     else:
-        # Se o numero a remover for maior ou igual que a quantidade, deletar a linha do banco de dados
-        session.delete(figurinha_removida)
-        session.commit()
-        return {"mensagem": f"Figurinha Deletada [-] do Album: {figurinhaschema.sigla, figurinhaschema.numero}"}
+        # Se o numero a remover for maior que a quantidade, status 400 quantidade indisponivel para retirada
+        if figurinha_removida.quantidade < figurinhaschema.quantidade:
+            raise HTTPException(status_code=400, detail="Quantidade maior que a disponível")
         
+        else:
+             # Se o numero a remover for igual a quantidade, deletar a linha do banco de dados
+            session.delete(figurinha_removida)
+            session.commit()
+            return {"mensagem": f"Figurinha Deletada [-] do Album: {figurinhaschema.sigla, figurinhaschema.numero}"}
+        
+@figurinhas_router.get("/repetidas", response_model=list[str])
+async def verificar_repetidas(usuario = Depends(verificar_token), session: Session = Depends(pegar_sessao)):
+    """
+    Esta é a rota padrão de listagem de figurinhas repetidas, toda listagem de repetidas precisa de uma autenticação prévia!
+    """
+    figurinhas_repetidas = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id, Figurinha.quantidade > 1).all()
+
+    lista_repetidas = []
+    for repetida in figurinhas_repetidas:
+        texto = f"{repetida.sigla} {repetida.numero} -- {(repetida.quantidade) -1}"
+        lista_repetidas.append(texto)
+    return lista_repetidas
+    
+
 
 
 
