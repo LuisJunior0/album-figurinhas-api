@@ -21,11 +21,11 @@ async def listar_figurinhas(
     # Utilizando List Comprehension para filtrar os dados em formato json
     return [
         {
-            "sigla": figurinha.sigla,
-            "numero": figurinha.numero,
-            "quantidade": figurinha.quantidade,
-            "observacao": figurinha.observacao
-        }
+        "sigla": figurinha.sigla, 
+        "numero": figurinha.numero, 
+        "quantidade": figurinha.quantidade, 
+        "observacao": figurinha.observacao
+        } 
         for figurinha in minhas_figurinhas
     ]
 
@@ -57,31 +57,50 @@ async def criar_figurinha(
 
 @figurinhas_router.post("/remover_figurinha")
 async def remover_figurinha(
-    figurinhaschema:FigurinhaSchema,
-    usuario: Usuario = Depends(verificar_token), 
-    session: Session = Depends(pegar_sessao)):
+    figurinhaschema: FigurinhaSchema,
+    usuario: Usuario = Depends(verificar_token),
+    session: Session = Depends(pegar_sessao)
+):
 
     """
     Esta é a rota padrão de remoção de figurinha, toda remoção de figurinha precisa de uma autenticação prévia!
     """
-    figurinha_removida = session.query(Figurinha).filter(Figurinha.sigla==figurinhaschema.sigla, Figurinha.numero==figurinhaschema.numero, Figurinha.usuario_id==usuario.id).first()
+
+    figurinha_removida = session.query(Figurinha).filter(
+        Figurinha.sigla == figurinhaschema.sigla,
+        Figurinha.numero == figurinhaschema.numero,
+        Figurinha.usuario_id == usuario.id
+    ).first()
+
     if not figurinha_removida:
-        raise HTTPException(status_code=404, detail="Figurinha Não Encontrada") 
-    elif figurinha_removida.quantidade > figurinhaschema.quantidade:
-        # Não deletar uma linha, apenas diminuir a quantidade
+        raise HTTPException(
+            status_code=404,
+            detail="Figurinha Não Encontrada"
+        )
+
+    # Se o numero a remover for maior que a quantidade, status 400 quantidade indisponivel para retirada
+    if figurinhaschema.quantidade > figurinha_removida.quantidade:
+        raise HTTPException(
+            status_code=400,
+            detail="Quantidade maior que a disponível"
+        )
+
+    # Não deletar uma linha, apenas diminuir a quantidade
+    if figurinhaschema.quantidade < figurinha_removida.quantidade:
         figurinha_removida.quantidade -= figurinhaschema.quantidade
         session.commit()
-        return {"mensagem": f"Figurinha(s) removida [!] com SUCESSO: {figurinhaschema.sigla, figurinhaschema.numero} [-{figurinhaschema.quantidade}]"}
-    else:
-        # Se o numero a remover for maior que a quantidade, status 400 quantidade indisponivel para retirada
-        if figurinha_removida.quantidade < figurinhaschema.quantidade:
-            raise HTTPException(status_code=400, detail="Quantidade maior que a disponível")
-        
-        else:
-             # Se o numero a remover for igual a quantidade, deletar a linha do banco de dados
-            session.delete(figurinha_removida)
-            session.commit()
-            return {"mensagem": f"Figurinha Deletada [-] do Album: {figurinhaschema.sigla, figurinhaschema.numero}"}
+
+        return {
+            "mensagem": f"Figurinha(s) removida [!] com SUCESSO: {figurinhaschema.sigla, figurinhaschema.numero} [-{figurinhaschema.quantidade}]"
+        }
+
+    # Se o numero a remover for igual a quantidade, deletar a linha do banco de dados
+    session.delete(figurinha_removida)
+    session.commit()
+
+    return {
+        "mensagem": f"Figurinha Deletada [-] do Album: {figurinhaschema.sigla, figurinhaschema.numero}"
+    }
         
 @figurinhas_router.get("/repetidas")
 async def verificar_repetidas(
@@ -113,9 +132,10 @@ async def mostrar_progresso(
     """
     Esta é a rota padrão para listagem de progresso do album, a rota de listagem do progresso precisa de uma autenticação prévia!
     """
-    TOTAL_ALBUM = 980
+    TOTAL_ALBUM = 994
     quantidade_figurinhas  = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id).count()
     final_percentual = (quantidade_figurinhas/TOTAL_ALBUM) * 100
+    
     return {
     "figurinhas": quantidade_figurinhas,
     "total_album": TOTAL_ALBUM,
@@ -133,6 +153,7 @@ async def destacar_figurinha(
     Esta é a rota padrão para consulta detalhada de figurinha, a rota consulta detalhada precisa de uma autenticação prévia!
     """
     # Validando que a sigla sera maiuscula para consulta correta na tabela
+    
     sigla_upper = sigla.upper()
     figurinha_destacada = session.query(Figurinha).filter(Figurinha.usuario_id == usuario.id, Figurinha.sigla==sigla_upper, Figurinha.numero==numero).first()
     if not figurinha_destacada:
@@ -141,5 +162,6 @@ async def destacar_figurinha(
     return {
     "sigla": figurinha_destacada.sigla,
     "numero": figurinha_destacada.numero,
+    "quantidade": figurinha_destacada.quantidade,
     "observação": figurinha_destacada.observacao
             }
