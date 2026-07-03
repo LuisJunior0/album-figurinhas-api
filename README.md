@@ -2,50 +2,70 @@
 
 API REST desenvolvida em Python com FastAPI para gerenciamento de álbuns de figurinhas, incluindo autenticação JWT, controle de usuários e gerenciamento completo das figurinhas de cada coleção.
 
-## 🚀 Funcionalidades
+---
 
-### Autenticação
+# 🚀 Funcionalidades
+
+## 🔐 Autenticação e Autorização
 
 * Cadastro de usuários
 * Login com JWT
 * Login compatível com OAuth2
 * Refresh Token
 * Rotas protegidas por autenticação
+* Validação de usuários ativos
+* Controle de acesso baseado no usuário autenticado
+* Senhas protegidas utilizando BCrypt
 
-### Gerenciamento de Figurinhas
+## 🎴 Gerenciamento de Figurinhas
 
 * Adicionar figurinhas ao álbum
-* Atualizar automaticamente a quantidade de figurinhas repetidas
-* Remover figurinhas
-* Consulta de figurinhas específicas
-* Listagem completa do álbum
+* Consultar figurinhas específicas
+* Listar todas as figurinhas do usuário
+* Atualização automática da quantidade de figurinhas repetidas
+* Remover figurinhas da coleção
 * Listagem de figurinhas repetidas
 * Cálculo automático do progresso do álbum
+* Associação automática das figurinhas ao usuário autenticado
 
-### Banco de Dados
+## 🗄 Banco de Dados
 
 * PostgreSQL
 * SQLAlchemy ORM
-* Migrações com Alembic
+* Alembic para versionamento do banco de dados
+* Migrations automatizadas
+* Criação e atualização controlada do schema
+
+## 🐳 Containerização
+
+* Docker
+* Docker Compose
+* API e banco executando em containers independentes
+* Comunicação interna via rede Docker
+* Configuração através de variáveis de ambiente
+* Ambiente reproduzível em qualquer máquina com Docker
 
 ---
 
-## 🛠 Tecnologias Utilizadas
+# 🛠 Tecnologias Utilizadas
 
 * Python 3
 * FastAPI
 * SQLAlchemy
 * PostgreSQL
 * Alembic
-* JWT (python-jose)
-* Passlib + Bcrypt
 * Pydantic
 * Uvicorn
 * Python Dotenv
+* Passlib
+* BCrypt
+* Python-Jose (JWT)
+* Docker
+* Docker Compose
 
 ---
 
-## 📂 Estrutura do Projeto
+# 📂 Estrutura do Projeto
 
 ```text
 app/
@@ -53,21 +73,50 @@ app/
 │   ├── auth_routes.py
 │   └── figurinha_routes.py
 │
-├── models.py
-├── schemas.py
 ├── database.py
 ├── dependencies.py
+├── models.py
+├── schemas.py
 ├── main.py
 │
-.env
+alembic/
+├── versions/
+│
+.env.example
+Dockerfile
+docker-compose.yml
 requirements.txt
+.gitignore
+.dockerignore
 ```
 
 ---
 
-## ⚙️ Instalação
+# ⚙️ Configuração
 
-### 1. Clonar o repositório
+Crie um arquivo `.env` na raiz do projeto utilizando o modelo abaixo:
+
+```env
+DB_USER=postgres
+DB_PASSWORD=sua_senha
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=album_db
+
+SECRET_KEY=sua_chave_secreta
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+---
+
+# 🐳 Executando com Docker
+
+## Pré-requisitos
+
+* Docker Desktop instalado
+
+## 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/seu-usuario/album-figurinhas-api.git
@@ -75,9 +124,55 @@ git clone https://github.com/seu-usuario/album-figurinhas-api.git
 cd album-figurinhas-api
 ```
 
-### 2. Criar ambiente virtual
+## 2. Criar o arquivo .env
 
-Windows:
+Utilize o `.env.example` como referência.
+
+## 3. Construir e iniciar os containers
+
+```bash
+docker compose up -d --build
+```
+
+## 4. Executar as migrations
+
+Após os containers iniciarem:
+
+```bash
+docker compose exec api alembic upgrade head
+```
+
+O Alembic aplicará todas as migrations pendentes ao banco de dados.
+
+## 5. Verificar os containers
+
+```bash
+docker ps
+```
+
+---
+
+# 📚 Documentação da API
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+ReDoc:
+
+```text
+http://localhost:8000/redoc
+```
+
+---
+
+# 💻 Executando Localmente
+
+## Criar ambiente virtual
+
+### Windows
 
 ```bash
 python -m venv venv
@@ -85,7 +180,7 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-Linux/Mac:
+### Linux / Mac
 
 ```bash
 python3 -m venv venv
@@ -93,50 +188,22 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Instalar dependências
+## Instalar dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+## Aplicar migrations
 
-## 🔧 Configuração
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-SECRET_KEY=sua_chave_secreta
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/sticker_album
+```bash
+alembic upgrade head
 ```
 
----
-
-## ▶️ Executando a API
+## Executar aplicação
 
 ```bash
 uvicorn app.main:app --reload
-```
-
-Após iniciar:
-
-```text
-http://127.0.0.1:8000
-```
-
-Documentação automática:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Swagger ReDoc:
-
-```text
-http://127.0.0.1:8000/redoc
 ```
 
 ---
@@ -176,8 +243,8 @@ POST `/auth/login`
 
 ```json
 {
-  "access_token": "...",
-  "refresh_token": "...",
+  "access_token": "jwt_token",
+  "refresh_token": "refresh_token",
   "token_type": "Bearer"
 }
 ```
@@ -198,25 +265,22 @@ GET `/auth/refresh`
 
 # 🎴 Endpoints de Figurinhas
 
-Todas as rotas abaixo exigem autenticação JWT.
-
----
+Todas as rotas exigem autenticação JWT.
 
 ## Listar Figurinhas
 
 GET `/figurinhas/listar`
 
-### Resposta
+---
 
-```json
-[
-  {
-    "sigla": "BRA",
-    "numero": 10,
-    "quantidade": 2,
-    "observacao": "Neymar"
-  }
-]
+## Consultar Figurinha
+
+GET `/figurinhas/{sigla}/{numero}`
+
+Exemplo:
+
+```text
+/figurinhas/BRA/10
 ```
 
 ---
@@ -240,56 +304,21 @@ POST `/figurinhas/criar_figurinha`
 
 ## Remover Figurinha
 
-POST `/figurinhas/remover_figurinha`
-
-### Exemplo
-
-```json
-{
-  "sigla": "BRA",
-  "numero": 10,
-  "quantidade": 1
-}
-```
+DELETE `/figurinhas/remover_figurinha/{id}`
 
 ---
 
-## Consultar Figurinha
-
-GET `/figurinhas/{sigla}/{numero}`
-
-### Exemplo
-
-```text
-/figurinhas/BRA/10
-```
-
----
-
-## Verificar Repetidas
+## Listar Figurinhas Repetidas
 
 GET `/figurinhas/repetidas`
 
-### Resposta
-
-```json
-[
-  {
-    "sigla": "BRA",
-    "numero": 10,
-    "quantidade": 2,
-    "observacao": "Neymar"
-  }
-]
-```
-
 ---
 
-## Progresso do Álbum
+## Consultar Progresso do Álbum
 
 GET `/figurinhas/progresso`
 
-### Resposta
+### Exemplo de resposta
 
 ```json
 {
@@ -301,32 +330,62 @@ GET `/figurinhas/progresso`
 
 ---
 
-## 🔒 Segurança
+# 🔒 Segurança
 
-A autenticação é baseada em JWT.
+A API utiliza autenticação baseada em JWT.
 
-Para acessar rotas protegidas:
+Para acessar endpoints protegidos:
 
 ```http
 Authorization: Bearer SEU_TOKEN
 ```
 
+As senhas dos usuários são armazenadas utilizando hash BCrypt e nunca são persistidas em texto puro.
+
 ---
 
-## 📈 Melhorias Futuras
+# 🗃 Migrations com Alembic
 
-* Docker
+Criar uma nova migration:
+
+```bash
+alembic revision --autogenerate -m "descricao_da_migration"
+```
+
+Ou utilizando Docker:
+
+```bash
+docker compose exec api alembic revision --autogenerate -m "descricao_da_migration"
+```
+
+Aplicar migrations:
+
+```bash
+alembic upgrade head
+```
+
+Ou utilizando Docker:
+
+```bash
+docker compose exec api alembic upgrade head
+```
+
+---
+
+# 📈 Melhorias Futuras
+
 * Testes automatizados
 * Paginação de resultados
 * Cache com Redis
-* Deploy em nuvem
-* Versionamento da API
 * CI/CD com GitHub Actions
+* Deploy em nuvem
+* Monitoramento e observabilidade
+* Versionamento da API
 
 ---
 
-## 👨‍💻 Autor
+# 👨‍💻 Autor
 
 Luis Junior
 
-Projeto desenvolvido para estudos de FastAPI, SQLAlchemy, PostgreSQL e autenticação JWT.
+Projeto desenvolvido para estudos de FastAPI, SQLAlchemy, PostgreSQL, autenticação JWT, Alembic e Docker.
