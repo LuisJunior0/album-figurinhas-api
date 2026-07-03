@@ -10,7 +10,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-from app.database import engine, Base  
+from app.database import engine, Base
+from app import models
 
 # Lê todas as classes que herdam de 'Base' e cria as tabelas reais no PostgreSQL usando o 'engine'
 Base.metadata.create_all(bind=engine)

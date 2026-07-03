@@ -24,6 +24,7 @@ class FigurinhaSchema(BaseModel):
     quantidade: int = Field(default = 1, ge=1)
     observacao: Optional[str] = Field(default=None, max_length=255)
     # Usuario pode passar a sigla minusculo ou maiusculo, porém apenas será salvo em upper
+    
     @field_validator("sigla")
     @classmethod
     def transformar_em_maiusculo(cls, v: str) -> str:
