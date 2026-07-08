@@ -119,7 +119,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 ## 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/album-figurinhas-api.git
+git clone https://github.com/LuisJunior0/album-figurinhas-api.git
 
 cd album-figurinhas-api
 ```
